@@ -4,11 +4,12 @@ const mongoose = require('mongoose')
 const supertest = require('supertest')
 const app = require('../app')
 const api = supertest(app)
+const bcrypt = require('bcryptjs')
 
 const listHelper = require('../utils/list_helper')
 
 const Blog = require('../models/blog')
-
+const User = require('../models/user')
 
 
 test('dummy returns one', () => {
@@ -153,8 +154,75 @@ test('should return 400 if blog does not exist', async () => {
     .expect(400)
 })
 
-after(async () => {
-  await mongoose.connection.close()
+describe('when there is initially one user at db', () => {
+  beforeEach(async () => {
+    await User.deleteMany({})
 
+    const passwordHash = await bcrypt.hash('sekret', 10)
+    const user = new User({ username: 'root', name: "testt", passwordHash })
+
+    await user.save()
+  })
+
+  test('creation succeeds with a new username', async () => {
+    const usersAtStart = await listHelper.usersInDb()
+
+    const newUser = {
+      username: 'Welluxx',
+      name: 'Wellu',
+      password: 'jotain',
+    }
+
+    await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(201)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await listHelper.usersInDb()
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1)
+
+    const usernames = usersAtEnd.map(u => u.username)
+    assert(usernames.includes(newUser.username))
+  })
+
+  test('creation fails with invalid username', async () => {
+  
+
+    const newUser = {
+      username: 'We',
+      name: 'Wellu',
+      password: 'jotain',
+    }
+
+    const result = await api
+      .post('/api/users')
+      .send(newUser)
+      .expect(400)
+
+      assert(result.body.error.includes('Invalid username or password. Length must be at least 3'))
+  })
+
+test('creation fails with invalid password', async () => {
+  
+
+  const newUser = {
+    username: 'Welluxxx',
+    name: 'wellu',
+    password: 'sa',
+  }
+
+  const result = await api
+    .post('/api/users')
+    .send(newUser)
+    .expect(400)
+
+    assert(result.body.error.includes('Invalid username or password. Length must be at least 3'))
+})
+})
+
+after(async () => {
+  await User.deleteMany({})
+  await mongoose.connection.close()
   console.log('All tests completed')
 })
