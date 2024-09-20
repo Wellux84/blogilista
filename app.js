@@ -7,7 +7,6 @@ require('express-async-errors')
 const cors = require('cors')
 const blogsRouter = require('./controllers/blogs')
 const middleware = require('./utils/middleware')
-const logger = require('./utils/logger')
 const mongoose = require('mongoose')
 
 app.use(cors())

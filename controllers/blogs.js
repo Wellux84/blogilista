@@ -1,7 +1,6 @@
-const jwt = require('jsonwebtoken')
 const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
-const User = require('../models/user')
+
 
 const getTokenFrom = request => {
   const authorization = request.get('authorization')
@@ -21,7 +20,7 @@ blogsRouter.post('/', async (request, response) => {
   const user = request.user
 
   if (!body.title || !body.url) {
-    return response.status(400).end();
+    return response.status(400).end()
   }
 
   const blog = new Blog({
